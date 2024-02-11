@@ -4,6 +4,8 @@ import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -17,6 +19,7 @@ import static org.example.Data.USERS_RESPONSE;
 import static org.example.Data.USER_PROFILE;
 
 public class Main {
+    private static final Logger log = LoggerFactory.getLogger(Main.class);
     public static final RateLimitChecker RATE_LIMITER = RateLimitChecker.build();
 
     public static void main(String[] args) throws Exception {
@@ -29,8 +32,9 @@ public class Main {
 
     private static ProxyHandler handlerUserProfile() {
         return new ProxyHandler(exchange -> {
-            System.out.println("/userprofile");
             long userId = getUserProfileIdArg(exchange.getRequestURI());
+            log.info("client: %s path: /userprofile arg: %d ".formatted(
+                    exchange.getRequestHeaders().getFirst("CLIENT_ID"), userId));
             try (exchange) {
                 UserDetailed userDetailed = USER_PROFILE.get(userId);
                 if (userDetailed != null) {
@@ -44,7 +48,8 @@ public class Main {
 
     private static ProxyHandler handleUsers() {
         return new ProxyHandler(exchange -> {
-            System.out.println("/users");
+            log.info("client: %s path: /users ".formatted(
+                    exchange.getRequestHeaders().getFirst("CLIENT_ID")));
             try (exchange) {
                 respond(exchange, 200, USERS_RESPONSE);
             }
@@ -70,7 +75,10 @@ public class Main {
                 return;
             }
             switch (RATE_LIMITER.rateLimited(new RateLimitChecker.PathAccess(id, exchange.getRequestURI().getPath()))) {
-                case RATE_LIMITED -> respond(exchange, 429);
+                case RATE_LIMITED -> {
+                    log.debug("Client: [%s] rate-limited".formatted(id));
+                    respond(exchange, 429);
+                }
                 case OK -> handler.handle(exchange);
             }
         }

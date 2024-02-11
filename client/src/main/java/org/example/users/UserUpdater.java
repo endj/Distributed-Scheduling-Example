@@ -12,6 +12,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -41,6 +42,7 @@ public class UserUpdater {
 
     private static void doWork() {
         List<Integer> integers = DB.usersToUpdate(Duration.ofSeconds(USER_STALENESS_LIMIT_SECONDS), USER_UPDATE_BATCH_SIZE);
+        List<Integer> updated = new ArrayList<>();
         for (Integer userId : integers) {
             try {
                 HttpResponse<String> response = HTTP_CLIENT.send(HttpRequest.newBuilder()
@@ -51,14 +53,17 @@ public class UserUpdater {
 
                 if (response.statusCode() != 200) {
                     log.warn("Got statusCode %d on /users".formatted(response.statusCode()));
+                    if(response.statusCode() == 429)
+                        break;
                 }
 
                 UserDetailed userDetailed = Config.MAPPER.readValue(response.body(), UserDetailed.class);
                 DB.updateUser(userDetailed);
+                updated.add(userId);
             } catch (Exception e) {
                 log.warn(e.getMessage());
             }
         }
-        log.info("Updated users " + integers);
+        log.info("Updated users " + updated);
     }
 }

@@ -12,6 +12,7 @@ repositories {
 }
 
 dependencies {
+    implementation("ch.qos.logback:logback-classic:1.4.14")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.16.1")
 }
 application {
