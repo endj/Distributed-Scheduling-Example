@@ -15,6 +15,7 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import static org.example.Config.CLIENT_ID;
@@ -23,6 +24,7 @@ import static org.example.Config.MAPPER;
 import static org.example.Config.USER_API_BASE_URL;
 import static org.example.Main.DB;
 import static org.example.locking.Leases.USER_INSERTING;
+import static org.example.locking.Leases.USER_UPDATE;
 
 public class UserInserter {
     private static final Logger log = LoggerFactory.getLogger(UserInserter.class);
@@ -38,13 +40,14 @@ public class UserInserter {
             var result = TableLeaseAcquirer.acquireUsersLock(USER_INSERTING, INSERTER_NAME);
             switch (result) {
                 case OK -> doWork();
-                case ERROR, TAKEN -> log.debug("Failed to acquire lock ->  ["+ result+"]");
+                case ERROR, TAKEN -> log.debug("Failed to acquire lease %s ->  [%s]".formatted(USER_INSERTING, result));
             }
-        }, 0, INSERT_POLL_RATE_SECONDS, TimeUnit.SECONDS);
+        }, ThreadLocalRandom.current().nextInt(60), INSERT_POLL_RATE_SECONDS, TimeUnit.SECONDS);
     }
 
     private static void doWork() {
         try {
+            log.info("%s acquired lease %s ".formatted(CLIENT_ID, USER_INSERTING));
             HttpResponse<String> response = HTTP_CLIENT.send(HttpRequest.newBuilder()
                     .timeout(Duration.ofSeconds(1))
                     .header("CLIENT_ID", CLIENT_ID)

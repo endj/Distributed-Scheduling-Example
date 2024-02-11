@@ -14,7 +14,7 @@ services:
 
   client_dev:
     image: client
-    container_name: dev_client_1
+    container_name: client_dev_1
     depends_on: [ mysqldev, registry ]
     environment:
       REGISTRY_BASE_URL: http://registry:8081
@@ -27,7 +27,7 @@ services:
 
   client_dev2:
     image: client
-    container_name: dev_client_2
+    container_name: client_dev_2
     depends_on: [ mysqldev, registry ]
     environment:
       REGISTRY_BASE_URL: http://registry:8081
@@ -41,7 +41,7 @@ services:
 
   client_dev3:
     image: client
-    container_name: dev_client_3
+    container_name: client_dev_3
     depends_on: [ mysqldev, registry ]
     environment:
       REGISTRY_BASE_URL: http://registry:8081

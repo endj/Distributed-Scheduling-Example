@@ -15,13 +15,17 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
+import static org.example.Config.CLIENT_ID;
 import static org.example.Config.UPDATE_POLL_RATE_SECONDS;
 import static org.example.Config.USER_API_BASE_URL;
 import static org.example.Config.USER_STALENESS_LIMIT_SECONDS;
 import static org.example.Config.USER_UPDATE_BATCH_SIZE;
 import static org.example.Main.DB;
+import static org.example.locking.Leases.USER_INSERTING;
+import static org.example.locking.Leases.USER_UPDATE;
 
 public class UserUpdater {
     private static final Logger log = LoggerFactory.getLogger(UserUpdater.class);
@@ -35,12 +39,13 @@ public class UserUpdater {
             var result = TableLeaseAcquirer.acquireUsersLock(Leases.USER_UPDATE, UPDATER_NAME);
             switch (result) {
                 case OK -> doWork();
-                case ERROR, TAKEN -> log.debug("Failed to acquire lock ->  [" + result + "]");
+                case ERROR, TAKEN -> log.debug("Failed to acquire lease %s ->  [%s]".formatted(USER_UPDATE, result));
             }
-        }, 0, UPDATE_POLL_RATE_SECONDS, TimeUnit.SECONDS);
+        }, ThreadLocalRandom.current().nextInt(60), UPDATE_POLL_RATE_SECONDS, TimeUnit.SECONDS);
     }
 
     private static void doWork() {
+        log.info("%s acquired lease %s ".formatted(CLIENT_ID, USER_UPDATE));
         List<Integer> integers = DB.usersToUpdate(Duration.ofSeconds(USER_STALENESS_LIMIT_SECONDS), USER_UPDATE_BATCH_SIZE);
         List<Integer> updated = new ArrayList<>();
         for (Integer userId : integers) {
