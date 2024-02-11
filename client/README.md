@@ -1,0 +1,23 @@
+# Client
+
+## Config System Environment Parameters
+
+* PORT
+* CLIENT_ID
+* DB_PORT
+* DB_ARGS
+* DB_HOST
+* HEALTH_CHECK_SECONDS
+* UPDATE_POLL_RATE
+* INSERT_POLL_RATE
+* USER_STALE_LIMIT_TTL
+* USER_UPDATE_BATCH_SIZE
+* USER_API_BASE_URL
+* REGISTRY_BASE_URL
+* LEASE_DURATION_MS
+
+## API
+
+* /userprofile?user=\<id>
+* /users
+* /stats
